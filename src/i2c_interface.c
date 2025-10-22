@@ -7,3 +7,7 @@ uint8_t I2cInterface_sendMessage(I2cInterface *self, const uint8_t *txBuff, uint
 uint8_t I2cInterface_readMessage(I2cInterface *self, uint8_t *rxBuff, size_t bufferSize, uint16_t address) {
   return self->readMessage(self->instance, rxBuff, bufferSize, address);
 }
+
+uint8_t I2cInterface_writeRead(I2cInterface *self, uint16_t address, const uint8_t *txBuff, size_t txSize, uint8_t *rxBuff, size_t rxSize) {
+  return self->writeRead(self->instance, address, txBuff, txSize, rxBuff, rxSize);
+}
