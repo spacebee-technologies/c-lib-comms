@@ -67,8 +67,8 @@ static uint8_t UdpBridge_receive(void *self, uint8_t *buffer, size_t bufferSize,
   UdpBridge *_self = (UdpBridge *)self;
   if (MutexInterface_acquire(_self->mutex)) {
     // Sends "P" which is the starting byte to request for a packet length
-    uint8_t startSequenceByte[1] = { "P" };
-    if (I2cInterface_sendMessage(_self->i2c, startSequenceByte, 1, UDP_BRIDGE_ADDRESS)) {
+    uint8_t startSequenceByte = 'P';
+    if (I2cInterface_sendMessage(_self->i2c, &startSequenceByte, 1, UDP_BRIDGE_ADDRESS)) {
       LOG_ERROR("Error polling for packet size");
     }
     uint8_t packetSize = 0;
