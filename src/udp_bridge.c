@@ -1,5 +1,7 @@
 #include "udp_bridge.h"
 
+#include <string.h>
+
 #include "logger.h"
 #include "zephyr_time.h"
 
@@ -34,17 +36,19 @@ static void UdpBridge_initializeInterface(UdpBridge *self) {
 static uint8_t UdpBridge_send(void *self, const uint8_t *buffer, size_t bufferSize) {
   UdpBridge *_self = (UdpBridge *)self;
   if (MutexInterface_acquire(_self->mutex)) {
-    uint8_t startingSequenceMessage[3];
-    startingSequenceMessage[0] = 'S';
-    startingSequenceMessage[1] = (_self->destinationPort & 0xFF00) >> 8;
-    startingSequenceMessage[2] = _self->destinationPort & 0xFF;
-    if (I2cInterface_sendMessage(_self->i2c, startingSequenceMessage, 3, UDP_BRIDGE_ADDRESS)) {
-      LOG_ERROR("Error sending message");
-    }
+    size_t sendBuffSize = bufferSize + 3;
+    uint8_t sendBuff[bufferSize + 3];
+    sendBuff[0] = 'S';
+    sendBuff[1] = (_self->destinationPort & 0xFF00) >> 8;
+    sendBuff[2] = _self->destinationPort & 0xFF;
+    memcpy(&sendBuff[3], buffer, bufferSize);
+
     uint8_t status = 0;
-    if (I2cInterface_sendMessage(_self->i2c, buffer, bufferSize, UDP_BRIDGE_ADDRESS)) {
+    if (I2cInterface_sendMessage(_self->i2c, sendBuff, sendBuffSize, UDP_BRIDGE_ADDRESS)) {
+      LOG_ERROR("Error sending message");
       status = 1;
     } else {
+      LOG_DEBUG("Message sent to UDP bridge ok");
       status = 0;
     }
     MutexInterface_release(_self->mutex);
