@@ -1,3 +1,5 @@
+// TODO: Rename as CommsMuxTransport?
+
 #ifndef USB_MUX_TRANSPORT_H_
 #define USB_MUX_TRANSPORT_H_
 
@@ -8,7 +10,6 @@
 
 #include "communication_interface.h"
 #include "udp_serial_mux.h"
-#include "usb_target.h"
 
 // TODO: Tune these values
 #define USB_MUX_MAX_DGRAM 1024
@@ -21,9 +22,6 @@ typedef struct {
 } UsbMuxTcPacket;
 
 typedef struct {
-  // Owns the physical USB CDC device
-  UsbTarget usbTarget;
-
   // Shared mux over the single byte stream
   UdpSerialMux mux;
 
@@ -52,7 +50,7 @@ typedef struct {
  *
  * @return 0 on success, non-zero on failure.
  */
-uint8_t UsbMuxTransport_create(UsbMuxTransport *self);
+uint8_t UsbMuxTransport_create(UsbMuxTransport *self, CommunicationInterface *io);
 
 /**
  * @brief Get interface for telecommand thread:

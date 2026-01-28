@@ -103,7 +103,7 @@ static uint8_t _tm_receive(void *instance, uint8_t *buffer, size_t bufferSize, s
 //******************************************************************************
 // Public methods
 //******************************************************************************
-uint8_t UsbMuxTransport_create(UsbMuxTransport *self) {
+uint8_t UsbMuxTransport_create(UsbMuxTransport *self, CommunicationInterface *io) {
   if (self == NULL) return 1;
 
   // Init synchronization primitives
@@ -111,12 +111,6 @@ uint8_t UsbMuxTransport_create(UsbMuxTransport *self) {
 
   // Init TC queue
   k_msgq_init(&self->tc_in_q, self->tc_in_q_storage, sizeof(UsbMuxTcPacket), USB_MUX_TC_QUEUE_DEPTH);
-
-  // Bring up USB CDC device
-  UsbTarget_create(&self->usbTarget);
-
-  CommunicationInterface *io = UsbTarget_viewAsCommunicationInterface(&self->usbTarget);
-  if (io == NULL) return 2;
 
   // Init mux over the byte stream
   udp_serial_mux_init(&self->mux,
