@@ -12,39 +12,6 @@ static void le16_write(uint8_t *p, uint16_t v) {
   p[1] = (uint8_t)((v >> 8) & 0xFF);
 }
 
-void udp_serial_mux_init(UdpSerialMux *m, CommunicationInterface *io,
-                         uint8_t *rx_enc_buf, size_t rx_enc_cap,
-                         uint8_t *rx_dec_buf, size_t rx_dec_cap,
-                         uint8_t *tx_enc_buf, size_t tx_enc_cap) {
-  m->io = io;
-
-  for (int i = 0; i < 3; i++) {
-    m->rx_cb[i] = 0;
-    m->rx_user[i] = 0;
-  }
-
-  m->rx_enc_buf = rx_enc_buf;
-  m->rx_enc_cap = rx_enc_cap;
-  m->rx_enc_len = 0;
-
-  m->rx_dec_buf = rx_dec_buf;
-  m->rx_dec_cap = rx_dec_cap;
-
-  m->tx_enc_buf = tx_enc_buf;
-  m->tx_enc_cap = tx_enc_cap;
-
-  m->frames_ok = 0;
-  m->frames_crc_fail = 0;
-  m->frames_decode_fail = 0;
-  m->frames_oversize = 0;
-}
-
-void udp_serial_mux_set_handler(UdpSerialMux *m, MuxChannel_t chan, mux_rx_cb_t cb, void *user) {
-  if ((int)chan < 0 || (int)chan >= 3) return;
-  m->rx_cb[(int)chan] = cb;
-  m->rx_user[(int)chan] = user;
-}
-
 static void handle_decoded_frame(UdpSerialMux *m, const uint8_t *dec, size_t dec_len) {
   // Minimum: chan(1) + len(2) + crc(2) = 5
   if (dec_len < 5) {
@@ -81,7 +48,40 @@ static void handle_decoded_frame(UdpSerialMux *m, const uint8_t *dec, size_t dec
   }
 }
 
-void udp_serial_mux_pump(UdpSerialMux *m) {
+void UdpSerialMux_create(UdpSerialMux *m, CommunicationInterface *io,
+                         uint8_t *rx_enc_buf, size_t rx_enc_cap,
+                         uint8_t *rx_dec_buf, size_t rx_dec_cap,
+                         uint8_t *tx_enc_buf, size_t tx_enc_cap) {
+  m->io = io;
+
+  for (int i = 0; i < 3; i++) {
+    m->rx_cb[i] = 0;
+    m->rx_user[i] = 0;
+  }
+
+  m->rx_enc_buf = rx_enc_buf;
+  m->rx_enc_cap = rx_enc_cap;
+  m->rx_enc_len = 0;
+
+  m->rx_dec_buf = rx_dec_buf;
+  m->rx_dec_cap = rx_dec_cap;
+
+  m->tx_enc_buf = tx_enc_buf;
+  m->tx_enc_cap = tx_enc_cap;
+
+  m->frames_ok = 0;
+  m->frames_crc_fail = 0;
+  m->frames_decode_fail = 0;
+  m->frames_oversize = 0;
+}
+
+void UdpSerialMux_setHandler(UdpSerialMux *m, MuxChannel_t chan, mux_rx_cb_t cb, void *user) {
+  if ((int)chan < 0 || (int)chan >= 3) return;
+  m->rx_cb[(int)chan] = cb;
+  m->rx_user[(int)chan] = user;
+}
+
+void UdpSerialMux_pump(UdpSerialMux *m) {
   // Read some bytes from the underlying stream
   uint8_t tmp[64];
   size_t got = 0;
@@ -122,7 +122,7 @@ void udp_serial_mux_pump(UdpSerialMux *m) {
   }
 }
 
-bool udp_serial_mux_send(UdpSerialMux *m, MuxChannel_t chan, const uint8_t *payload, size_t len) {
+bool UdpSerialMux_send(UdpSerialMux *m, MuxChannel_t chan, const uint8_t *payload, size_t len) {
   if ((int)chan < 0 || (int)chan >= 3) return false;
   if (!payload && len != 0) return false;
   if (len > 0xFFFF) return false;

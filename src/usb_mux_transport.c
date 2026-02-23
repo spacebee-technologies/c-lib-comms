@@ -33,7 +33,7 @@ static uint8_t _tc_send(void *instance, const uint8_t *buffer, size_t bufferSize
 
   // Serialize all TX frames
   k_mutex_lock(&self->tx_lock, K_FOREVER);
-  bool ok = udp_serial_mux_send(&self->mux, MUX_CHAN_TC_RSP, buffer, bufferSize);
+  bool ok = UdpSerialMux_send(&self->mux, MUX_CHAN_TC_RSP, buffer, bufferSize);
   k_mutex_unlock(&self->tx_lock);
 
   return ok ? 0 : 1;
@@ -59,7 +59,7 @@ static uint8_t _tc_receive(void *instance, uint8_t *buffer, size_t bufferSize, s
 
   // If no queued TC yet. Pump the mux once to pull bytes from CDC and parse frames
   // Only TC thread should call this receive() to avoid RX races
-  udp_serial_mux_pump(&self->mux);
+  UdpSerialMux_pump(&self->mux);
 
   // Try again after pumping.
   if (k_msgq_get(&self->tc_in_q, &pkt, K_NO_WAIT) == 0) {
@@ -82,7 +82,7 @@ static uint8_t _tm_send(void *instance, const uint8_t *buffer, size_t bufferSize
   UsbMuxTransport *self = (UsbMuxTransport *)instance;
 
   k_mutex_lock(&self->tx_lock, K_FOREVER);
-  bool ok = udp_serial_mux_send(&self->mux, MUX_CHAN_TM_OUT, buffer, bufferSize);
+  bool ok = UdpSerialMux_send(&self->mux, MUX_CHAN_TM_OUT, buffer, bufferSize);
   k_mutex_unlock(&self->tx_lock);
 
   return ok ? 0 : 1;
@@ -113,14 +113,14 @@ uint8_t UsbMuxTransport_create(UsbMuxTransport *self, CommunicationInterface *io
   k_msgq_init(&self->tc_in_q, self->tc_in_q_storage, sizeof(UsbMuxTcPacket), USB_MUX_TC_QUEUE_DEPTH);
 
   // Init mux over the byte stream
-  udp_serial_mux_init(&self->mux,
+  UdpSerialMux_create(&self->mux,
                       io,
                       self->rx_enc_buf, sizeof(self->rx_enc_buf),
                       self->rx_dec_buf, sizeof(self->rx_dec_buf),
                       self->tx_enc_buf, sizeof(self->tx_enc_buf));
 
   // Register RX handler for TC_IN frames
-  udp_serial_mux_set_handler(&self->mux, MUX_CHAN_TC_IN, _mux_on_rx, self);
+  UdpSerialMux_setHandler(&self->mux, MUX_CHAN_TC_IN, _mux_on_rx, self);
 
   // Create two CommunicationInterface "views"
   self->tc_iface.instance = self;
