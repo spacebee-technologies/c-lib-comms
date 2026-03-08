@@ -1,6 +1,5 @@
 #include "cobs.h"
 
-// Standard COBS
 size_t cobs_encode(const uint8_t *in, size_t in_len, uint8_t *out, size_t out_cap) {
   if (!in || !out) return 0;
   if (out_cap == 0) return 0;
