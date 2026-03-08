@@ -5,6 +5,8 @@
 
 #include "communication_interface.h"
 
+#define USB_MUX_MAX_DGRAM 1024
+
 typedef enum MuxChannel {
   MUX_CHAN_TC_IN  = 0,
   MUX_CHAN_TC_RSP = 1,
@@ -19,16 +21,13 @@ typedef struct UdpSerialMux {
   mux_rx_cb_t rx_cb[3];
   void *rx_user[3];
 
-  // RX stream accumulation (COBS block until delimiter 0x00)
-  uint8_t *rx_enc_buf;
-  size_t rx_enc_cap;
+  uint8_t rx_enc_buf[USB_MUX_MAX_DGRAM + 64];
+  uint8_t rx_dec_buf[USB_MUX_MAX_DGRAM + 32];
+  uint8_t tx_enc_buf[USB_MUX_MAX_DGRAM + 64];
+
   size_t rx_enc_len;
-
-  // scratch buffers
-  uint8_t *rx_dec_buf;
+  size_t rx_enc_cap;
   size_t rx_dec_cap;
-
-  uint8_t *tx_enc_buf;
   size_t tx_enc_cap;
 
   // stats
@@ -43,17 +42,8 @@ typedef struct UdpSerialMux {
  *
  * @param m Uninitialized mux struct
  * @param io Communication interface to underlying transport
- * @param rx_enc_buf Buffer for accumulating incoming COBS encoded frames
- * @param rx_enc_cap Capacity of rx_enc_buf
- * @param rx_dec_buf Buffer for decoded frames
- * @param rx_dec_cap Capacity of rx_dec_buf
- * @param tx_enc_buf Buffer for encoding outgoing frames
- * @param tx_enc_cap Capacity of tx_enc_buf
  */
-void UdpSerialMux_create(UdpSerialMux *m, CommunicationInterface *io,
-                         uint8_t *rx_enc_buf, size_t rx_enc_cap,
-                         uint8_t *rx_dec_buf, size_t rx_dec_cap,
-                         uint8_t *tx_enc_buf, size_t tx_enc_cap);
+void UdpSerialMux_create(UdpSerialMux *m, CommunicationInterface *io);
 
 /**
  * @brief Register callback for received frames on a channel

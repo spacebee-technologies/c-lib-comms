@@ -3,6 +3,9 @@
 #include "cobs.h"
 #include "crc16_ccitt.h"
 
+//******************************************************************************
+// Private helpers
+//******************************************************************************
 static uint16_t le16_read(const uint8_t *p) {
   return (uint16_t)p[0] | ((uint16_t)p[1] << 8);
 }
@@ -48,10 +51,10 @@ static void handle_decoded_frame(UdpSerialMux *m, const uint8_t *dec, size_t dec
   }
 }
 
-void UdpSerialMux_create(UdpSerialMux *m, CommunicationInterface *io,
-                         uint8_t *rx_enc_buf, size_t rx_enc_cap,
-                         uint8_t *rx_dec_buf, size_t rx_dec_cap,
-                         uint8_t *tx_enc_buf, size_t tx_enc_cap) {
+//******************************************************************************
+// Public methods
+//******************************************************************************
+void UdpSerialMux_create(UdpSerialMux *m, CommunicationInterface *io) {
   m->io = io;
 
   for (int i = 0; i < 3; i++) {
@@ -59,15 +62,11 @@ void UdpSerialMux_create(UdpSerialMux *m, CommunicationInterface *io,
     m->rx_user[i] = 0;
   }
 
-  m->rx_enc_buf = rx_enc_buf;
-  m->rx_enc_cap = rx_enc_cap;
+  m->rx_enc_cap = sizeof(m->rx_enc_buf);
+  m->rx_dec_cap = sizeof(m->rx_dec_buf);
+  m->tx_enc_cap = sizeof(m->tx_enc_buf);
+
   m->rx_enc_len = 0;
-
-  m->rx_dec_buf = rx_dec_buf;
-  m->rx_dec_cap = rx_dec_cap;
-
-  m->tx_enc_buf = tx_enc_buf;
-  m->tx_enc_cap = tx_enc_cap;
 
   m->frames_ok = 0;
   m->frames_crc_fail = 0;

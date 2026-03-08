@@ -113,11 +113,7 @@ uint8_t UsbMuxTransport_create(UsbMuxTransport *self, CommunicationInterface *io
   k_msgq_init(&self->tc_in_q, self->tc_in_q_storage, sizeof(UsbMuxTcPacket), USB_MUX_TC_QUEUE_DEPTH);
 
   // Init mux over the byte stream
-  UdpSerialMux_create(&self->mux,
-                      io,
-                      self->rx_enc_buf, sizeof(self->rx_enc_buf),
-                      self->rx_dec_buf, sizeof(self->rx_dec_buf),
-                      self->tx_enc_buf, sizeof(self->tx_enc_buf));
+  UdpSerialMux_create(&self->mux, io);
 
   // Register RX handler for TC_IN frames
   UdpSerialMux_setHandler(&self->mux, MUX_CHAN_TC_IN, _mux_on_rx, self);
