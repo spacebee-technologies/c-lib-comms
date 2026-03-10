@@ -10,6 +10,7 @@
 
 #include "communication_interface.h"
 #include "udp_serial_mux.h"
+#include "mutex_interface.h"
 
 #define USB_MUX_TC_QUEUE_DEPTH 8
 
@@ -24,7 +25,7 @@ typedef struct {
   UdpSerialMux mux;
 
   // Serialize TX from multiple threads
-  struct k_mutex tx_lock;
+  MutexInterface *tx_lock;
 
   // Queue for inbound telecommands
   struct k_msgq tc_in_q;
@@ -36,14 +37,13 @@ typedef struct {
 } UsbMuxTransport;
 
 /**
- * @brief Initialize transport, enable USB, create the mux, and expose two interfaces.
- *
- * - tc_iface: RX(TC_IN) + TX(TC_RSP)
- * - tm_iface: TX(TM_OUT) only
+ * @brief Initialize transport, enable USB, create the mux, and expose two interfaces:
+ *        - tc_iface: RX(TC_IN) + TX(TC_RSP)
+ *        - tm_iface: TX(TM_OUT) only
  *
  * @return 0 on success, non-zero on failure.
  */
-uint8_t UsbMuxTransport_create(UsbMuxTransport *self, CommunicationInterface *io);
+uint8_t UsbMuxTransport_create(UsbMuxTransport *self, CommunicationInterface *io, MutexInterface *tx_lock);
 
 /**
  * @brief Get interface for telecommand thread:

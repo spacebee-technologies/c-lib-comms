@@ -4,6 +4,8 @@
 
 #include <zephyr/kernel.h>
 
+#define MUTEX_RETRIES 5
+
 static void _mux_on_rx(MuxChannel_t chan, const uint8_t *payload, size_t len, void *user) {
   UsbMuxTransport *self = (UsbMuxTransport *)user;
 
@@ -31,10 +33,15 @@ static void _mux_on_rx(MuxChannel_t chan, const uint8_t *payload, size_t len, vo
 static uint8_t _tc_send(void *instance, const uint8_t *buffer, size_t bufferSize) {
   UsbMuxTransport *self = (UsbMuxTransport *)instance;
 
-  // Serialize all TX frames
-  k_mutex_lock(&self->tx_lock, K_FOREVER);
+  uint8_t retries = MUTEX_RETRIES;
+  while (MutexInterface_acquire(self->tx_lock) == false) {  // Wait until the lock is available
+    if (retries-- == 0) {
+      return 1;  // Failed to acquire lock after several tries: give up on this frame
+    }
+  }
+
   bool ok = UdpSerialMux_send(&self->mux, MUX_CHAN_TC_RSP, buffer, bufferSize);
-  k_mutex_unlock(&self->tx_lock);
+  MutexInterface_release(self->tx_lock);
 
   return ok ? 0 : 1;
 }
@@ -81,9 +88,15 @@ static uint8_t _tc_receive(void *instance, uint8_t *buffer, size_t bufferSize, s
 static uint8_t _tm_send(void *instance, const uint8_t *buffer, size_t bufferSize) {
   UsbMuxTransport *self = (UsbMuxTransport *)instance;
 
-  k_mutex_lock(&self->tx_lock, K_FOREVER);
+  uint8_t retries = MUTEX_RETRIES;
+  while (MutexInterface_acquire(self->tx_lock) == false) {  // Wait until the lock is available
+    if (retries-- == 0) {
+      return 1;  // Failed to acquire lock after several tries: give up on this frame
+    }
+  }
+
   bool ok = UdpSerialMux_send(&self->mux, MUX_CHAN_TM_OUT, buffer, bufferSize);
-  k_mutex_unlock(&self->tx_lock);
+  MutexInterface_release(self->tx_lock);
 
   return ok ? 0 : 1;
 }
@@ -103,11 +116,10 @@ static uint8_t _tm_receive(void *instance, uint8_t *buffer, size_t bufferSize, s
 //******************************************************************************
 // Public methods
 //******************************************************************************
-uint8_t UsbMuxTransport_create(UsbMuxTransport *self, CommunicationInterface *io) {
+uint8_t UsbMuxTransport_create(UsbMuxTransport *self, CommunicationInterface *io, MutexInterface *tx_lock) {
   if (self == NULL) return 1;
 
-  // Init synchronization primitives
-  k_mutex_init(&self->tx_lock);
+  self->tx_lock = tx_lock;
 
   // Init TC queue
   k_msgq_init(&self->tc_in_q, self->tc_in_q_storage, sizeof(UsbMuxTcPacket), USB_MUX_TC_QUEUE_DEPTH);
