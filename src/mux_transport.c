@@ -1,4 +1,4 @@
-#include "usb_mux_transport.h"
+#include "mux_transport.h"
 
 #include <string.h>
 
@@ -7,7 +7,7 @@
 #define MUTEX_RETRIES 5
 
 static void _mux_on_rx(MuxChannel_t chan, const uint8_t *payload, size_t len, void *user) {
-  UsbMuxTransport *self = (UsbMuxTransport *)user;
+  MuxTransport *self = (MuxTransport *)user;
 
   if (chan != MUX_CHAN_TC_IN) {
     // Rover typically only receives TC_IN from host; ignore other inbound channels
@@ -19,7 +19,7 @@ static void _mux_on_rx(MuxChannel_t chan, const uint8_t *payload, size_t len, vo
     return;
   }
 
-  UsbMuxTcPacket pkt = {0};
+  MuxTransportTcPacket pkt = {0};
   pkt.len = (uint16_t)len;
   memcpy(pkt.data, payload, len);
 
@@ -31,7 +31,7 @@ static void _mux_on_rx(MuxChannel_t chan, const uint8_t *payload, size_t len, vo
 // TC interface implementation
 //******************************************************************************
 static uint8_t _tc_send(void *instance, const uint8_t *buffer, size_t bufferSize) {
-  UsbMuxTransport *self = (UsbMuxTransport *)instance;
+  MuxTransport *self = (MuxTransport *)instance;
 
   uint8_t retries = MUTEX_RETRIES;
   while (MutexInterface_acquire(self->tx_lock) == false) {  // Wait until the lock is available
@@ -47,13 +47,13 @@ static uint8_t _tc_send(void *instance, const uint8_t *buffer, size_t bufferSize
 }
 
 static uint8_t _tc_receive(void *instance, uint8_t *buffer, size_t bufferSize, size_t *receivedSize) {
-  UsbMuxTransport *self = (UsbMuxTransport *)instance;
+  MuxTransport *self = (MuxTransport *)instance;
 
   if (receivedSize == NULL) return 1;
   *receivedSize = 0;
 
   // If we already have a queued TC datagram, return it immediately
-  UsbMuxTcPacket pkt;
+  MuxTransportTcPacket pkt;
   if (k_msgq_get(&self->tc_in_q, &pkt, K_NO_WAIT) == 0) {
     if (pkt.len > bufferSize) {
       // Caller buffer too small: safest is to drop and signal error
@@ -86,7 +86,7 @@ static uint8_t _tc_receive(void *instance, uint8_t *buffer, size_t bufferSize, s
 // TM interface implementation
 //******************************************************************************
 static uint8_t _tm_send(void *instance, const uint8_t *buffer, size_t bufferSize) {
-  UsbMuxTransport *self = (UsbMuxTransport *)instance;
+  MuxTransport *self = (MuxTransport *)instance;
 
   uint8_t retries = MUTEX_RETRIES;
   while (MutexInterface_acquire(self->tx_lock) == false) {  // Wait until the lock is available
@@ -116,13 +116,13 @@ static uint8_t _tm_receive(void *instance, uint8_t *buffer, size_t bufferSize, s
 //******************************************************************************
 // Public methods
 //******************************************************************************
-uint8_t UsbMuxTransport_create(UsbMuxTransport *self, CommunicationInterface *io, MutexInterface *tx_lock) {
+uint8_t MuxTransport_create(MuxTransport *self, CommunicationInterface *io, MutexInterface *tx_lock) {
   if (self == NULL) return 1;
 
   self->tx_lock = tx_lock;
 
   // Init TC queue
-  k_msgq_init(&self->tc_in_q, self->tc_in_q_storage, sizeof(UsbMuxTcPacket), USB_MUX_TC_QUEUE_DEPTH);
+  k_msgq_init(&self->tc_in_q, self->tc_in_q_storage, sizeof(MuxTransportTcPacket), MUX_TRANSPORT_TC_QUEUE_DEPTH);
 
   // Init mux over the byte stream
   UdpSerialMux_create(&self->mux, io);
@@ -142,10 +142,10 @@ uint8_t UsbMuxTransport_create(UsbMuxTransport *self, CommunicationInterface *io
   return 0;
 }
 
-CommunicationInterface *UsbMuxTransport_tcInterface(UsbMuxTransport *self) {
+CommunicationInterface *MuxTransport_tcInterface(MuxTransport *self) {
   return &self->tc_iface;
 }
 
-CommunicationInterface *UsbMuxTransport_tmInterface(UsbMuxTransport *self) {
+CommunicationInterface *MuxTransport_tmInterface(MuxTransport *self) {
   return &self->tm_iface;
 }
