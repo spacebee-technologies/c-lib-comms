@@ -24,6 +24,7 @@ typedef struct SerialDatagramMux {
   uint8_t rx_enc_buf[SERIAL_DATAGRAM_MUX_MAX_SIZE + 64];
   uint8_t rx_dec_buf[SERIAL_DATAGRAM_MUX_MAX_SIZE + 32];
   uint8_t tx_enc_buf[SERIAL_DATAGRAM_MUX_MAX_SIZE + 64];
+  uint8_t tx_frame_buf[SERIAL_DATAGRAM_MUX_MAX_SIZE];
 
   size_t rx_enc_len;
   size_t rx_enc_cap;

@@ -126,26 +126,27 @@ bool SerialDatagramMux_send(SerialDatagramMux *m, MuxChannel_t chan, const uint8
   if (!payload && len != 0) return false;
   if (len > 0xFFFF) return false;
 
-  // Build decoded frame into rx_dec_buf temporarily (reuse as scratch)
   // Layout: chan(1) + len(2) + payload(len) + crc(2)
-  size_t dec_len = 1 + 2 + len + 2;
-  if (dec_len > m->rx_dec_cap) return false;
+  size_t frame_len = 1u + 2u + len + 2u;
+  if (frame_len > sizeof(m->tx_frame_buf)) return false;
 
-  m->rx_dec_buf[0] = (uint8_t)chan;
-  le16_write(&m->rx_dec_buf[1], (uint16_t)len);
-  for (size_t i = 0; i < len; i++) {
-    m->rx_dec_buf[3 + i] = payload[i];
+  m->tx_frame_buf[0] = (uint8_t)chan;
+  le16_write(&m->tx_frame_buf[1], (uint16_t)len);
+
+  if (len > 0) {
+    memcpy(&m->tx_frame_buf[3], payload, len);
   }
 
-  uint16_t crc = crc16_ccitt_false(m->rx_dec_buf, 3 + len);
-  le16_write(&m->rx_dec_buf[3 + len], crc);
+  uint16_t crc = crc16_ccitt_false(m->tx_frame_buf, 3u + len);
+  le16_write(&m->tx_frame_buf[3 + len], crc);
 
   // COBS encode into tx buffer
-  size_t enc_len = cobs_encode(m->rx_dec_buf, dec_len, m->tx_enc_buf, m->tx_enc_cap);
+  size_t enc_len = cobs_encode(m->tx_frame_buf, frame_len, m->tx_enc_buf, m->tx_enc_cap);
   if (enc_len == 0) return false;
 
   // Send encoded bytes + delimiter 0x00
   if (CommunicationInterface_send(m->io, m->tx_enc_buf, enc_len) != 0) return false;
+
   uint8_t delim = 0x00;
   if (CommunicationInterface_send(m->io, &delim, 1) != 0) return false;
 
