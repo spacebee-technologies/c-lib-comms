@@ -1,5 +1,7 @@
 #include "serial_datagram_mux.h"
 
+#include <string.h>
+
 #include "cobs.h"
 #include "crc16_ccitt.h"
 
