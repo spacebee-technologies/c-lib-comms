@@ -4,8 +4,13 @@
 #include <stdbool.h>
 
 #include "communication_interface.h"
+#include "cobs.h"
 
-#define SERIAL_DATAGRAM_MUX_MAX_SIZE 1024
+#define SERIAL_DATAGRAM_MUX_MAX_PAYLOAD 1024
+#define SERIAL_DATAGRAM_MUX_FRAME_OVERHEAD 5  // chan(1) + len(2) + crc(2)
+
+#define SERIAL_DATAGRAM_MUX_MAX_FRAME (SERIAL_DATAGRAM_MUX_MAX_PAYLOAD + SERIAL_DATAGRAM_MUX_FRAME_OVERHEAD)
+#define SERIAL_DATAGRAM_MUX_MAX_ENCODED (SERIAL_DATAGRAM_MUX_MAX_FRAME + COBS_MAX_OVERHEAD(SERIAL_DATAGRAM_MUX_MAX_FRAME))
 
 typedef enum MuxChannel {
   MUX_CHAN_TC_IN  = 0,
@@ -21,10 +26,10 @@ typedef struct SerialDatagramMux {
   mux_rx_cb_t rx_cb[3];
   void *rx_user[3];
 
-  uint8_t rx_enc_buf[SERIAL_DATAGRAM_MUX_MAX_SIZE + 64];
-  uint8_t rx_dec_buf[SERIAL_DATAGRAM_MUX_MAX_SIZE + 32];
-  uint8_t tx_enc_buf[SERIAL_DATAGRAM_MUX_MAX_SIZE + 64];
-  uint8_t tx_frame_buf[SERIAL_DATAGRAM_MUX_MAX_SIZE];
+  uint8_t rx_enc_buf[SERIAL_DATAGRAM_MUX_MAX_ENCODED];
+  uint8_t rx_dec_buf[SERIAL_DATAGRAM_MUX_MAX_FRAME];
+  uint8_t tx_enc_buf[SERIAL_DATAGRAM_MUX_MAX_ENCODED];
+  uint8_t tx_frame_buf[SERIAL_DATAGRAM_MUX_MAX_FRAME];
 
   size_t rx_enc_len;
   size_t rx_enc_cap;

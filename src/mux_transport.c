@@ -14,7 +14,7 @@ static void _mux_on_rx(MuxChannel_t chan, const uint8_t *payload, size_t len, vo
     return;
   }
 
-  if (len > SERIAL_DATAGRAM_MUX_MAX_SIZE) {
+  if (len > SERIAL_DATAGRAM_MUX_MAX_PAYLOAD) {
     // Drop oversize datagrams (UDP-like)
     return;
   }

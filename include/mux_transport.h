@@ -15,7 +15,7 @@
 // Internal packet stored in the telecommand queue
 typedef struct {
   uint16_t len;
-  uint8_t data[SERIAL_DATAGRAM_MUX_MAX_SIZE];
+  uint8_t data[SERIAL_DATAGRAM_MUX_MAX_PAYLOAD];
 } MuxTransportTcPacket;
 
 typedef struct {

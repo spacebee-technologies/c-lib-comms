@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define COBS_MAX_OVERHEAD(len) (((len) / 254) + 1)
+
 /**
  * @brief Returns encoded length on success, 0 on failure (out buffer too small)
  */
