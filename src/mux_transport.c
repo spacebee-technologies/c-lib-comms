@@ -14,7 +14,7 @@ static void _mux_on_rx(MuxChannel_t chan, const uint8_t *payload, size_t len, vo
     return;
   }
 
-  if (len > USB_MUX_MAX_DGRAM) {
+  if (len > SERIAL_DATAGRAM_MUX_MAX_SIZE) {
     // Drop oversize datagrams (UDP-like)
     return;
   }
@@ -40,7 +40,7 @@ static uint8_t _tc_send(void *instance, const uint8_t *buffer, size_t bufferSize
     }
   }
 
-  bool ok = UdpSerialMux_send(&self->mux, MUX_CHAN_TC_RSP, buffer, bufferSize);
+  bool ok = SerialDatagramMux_send(&self->mux, MUX_CHAN_TC_RSP, buffer, bufferSize);
   MutexInterface_release(self->tx_lock);
 
   return ok ? 0 : 1;
@@ -66,7 +66,7 @@ static uint8_t _tc_receive(void *instance, uint8_t *buffer, size_t bufferSize, s
 
   // If no queued TC yet. Pump the mux once to pull bytes from CDC and parse frames
   // Only TC thread should call this receive() to avoid RX races
-  UdpSerialMux_pump(&self->mux);
+  SerialDatagramMux_pump(&self->mux);
 
   // Try again after pumping.
   if (k_msgq_get(&self->tc_in_q, &pkt, K_NO_WAIT) == 0) {
@@ -95,7 +95,7 @@ static uint8_t _tm_send(void *instance, const uint8_t *buffer, size_t bufferSize
     }
   }
 
-  bool ok = UdpSerialMux_send(&self->mux, MUX_CHAN_TM_OUT, buffer, bufferSize);
+  bool ok = SerialDatagramMux_send(&self->mux, MUX_CHAN_TM_OUT, buffer, bufferSize);
   MutexInterface_release(self->tx_lock);
 
   return ok ? 0 : 1;
@@ -125,10 +125,10 @@ uint8_t MuxTransport_create(MuxTransport *self, CommunicationInterface *io, Mute
   k_msgq_init(&self->tc_in_q, self->tc_in_q_storage, sizeof(MuxTransportTcPacket), MUX_TRANSPORT_TC_QUEUE_DEPTH);
 
   // Init mux over the byte stream
-  UdpSerialMux_create(&self->mux, io);
+  SerialDatagramMux_create(&self->mux, io);
 
   // Register RX handler for TC_IN frames
-  UdpSerialMux_setHandler(&self->mux, MUX_CHAN_TC_IN, _mux_on_rx, self);
+  SerialDatagramMux_setHandler(&self->mux, MUX_CHAN_TC_IN, _mux_on_rx, self);
 
   // Create two CommunicationInterface "views"
   self->tc_iface.instance = self;

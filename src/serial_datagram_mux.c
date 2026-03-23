@@ -1,4 +1,4 @@
-#include "udp_serial_mux.h"
+#include "serial_datagram_mux.h"
 
 #include "cobs.h"
 #include "crc16_ccitt.h"
@@ -15,7 +15,7 @@ static void le16_write(uint8_t *p, uint16_t v) {
   p[1] = (uint8_t)((v >> 8) & 0xFF);
 }
 
-static void handle_decoded_frame(UdpSerialMux *m, const uint8_t *dec, size_t dec_len) {
+static void handle_decoded_frame(SerialDatagramMux *m, const uint8_t *dec, size_t dec_len) {
   // Minimum: chan(1) + len(2) + crc(2) = 5
   if (dec_len < 5) {
     m->frames_decode_fail++;
@@ -54,7 +54,7 @@ static void handle_decoded_frame(UdpSerialMux *m, const uint8_t *dec, size_t dec
 //******************************************************************************
 // Public methods
 //******************************************************************************
-void UdpSerialMux_create(UdpSerialMux *m, CommunicationInterface *io) {
+void SerialDatagramMux_create(SerialDatagramMux *m, CommunicationInterface *io) {
   m->io = io;
 
   for (int i = 0; i < 3; i++) {
@@ -74,18 +74,18 @@ void UdpSerialMux_create(UdpSerialMux *m, CommunicationInterface *io) {
   m->frames_oversize = 0;
 }
 
-void UdpSerialMux_setHandler(UdpSerialMux *m, MuxChannel_t chan, mux_rx_cb_t cb, void *user) {
+void SerialDatagramMux_setHandler(SerialDatagramMux *m, MuxChannel_t chan, mux_rx_cb_t cb, void *user) {
   if ((int)chan < 0 || (int)chan >= 3) return;
   m->rx_cb[(int)chan] = cb;
   m->rx_user[(int)chan] = user;
 }
 
-void UdpSerialMux_pump(UdpSerialMux *m) {
+void SerialDatagramMux_pump(SerialDatagramMux *m) {
   // Read some bytes from the underlying stream
   uint8_t tmp[64];
   size_t got = 0;
 
-  uint8_t ret = m->io->receive(m->io->instance, tmp, sizeof(tmp), &got);
+  uint8_t ret = CommunicationInterface_receive(m->io, tmp, sizeof(tmp), &got);
   if (ret != 0 || got == 0) return;
 
   for (size_t i = 0; i < got; i++) {
@@ -121,7 +121,7 @@ void UdpSerialMux_pump(UdpSerialMux *m) {
   }
 }
 
-bool UdpSerialMux_send(UdpSerialMux *m, MuxChannel_t chan, const uint8_t *payload, size_t len) {
+bool SerialDatagramMux_send(SerialDatagramMux *m, MuxChannel_t chan, const uint8_t *payload, size_t len) {
   if ((int)chan < 0 || (int)chan >= 3) return false;
   if (!payload && len != 0) return false;
   if (len > 0xFFFF) return false;
@@ -145,9 +145,9 @@ bool UdpSerialMux_send(UdpSerialMux *m, MuxChannel_t chan, const uint8_t *payloa
   if (enc_len == 0) return false;
 
   // Send encoded bytes + delimiter 0x00
-  if (m->io->send(m->io->instance, m->tx_enc_buf, enc_len) != 0) return false;
+  if (CommunicationInterface_send(m->io, m->tx_enc_buf, enc_len) != 0) return false;
   uint8_t delim = 0x00;
-  if (m->io->send(m->io->instance, &delim, 1) != 0) return false;
+  if (CommunicationInterface_send(m->io, &delim, 1) != 0) return false;
 
   return true;
 }

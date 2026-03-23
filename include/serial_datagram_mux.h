@@ -1,11 +1,11 @@
-#ifndef UDP_SERIAL_MUX_H_
-#define UDP_SERIAL_MUX_H_
+#ifndef SERIAL_DATAGRAM_MUX_H_
+#define SERIAL_DATAGRAM_MUX_H_
 
 #include <stdbool.h>
 
 #include "communication_interface.h"
 
-#define USB_MUX_MAX_DGRAM 1024
+#define SERIAL_DATAGRAM_MUX_MAX_SIZE 1024
 
 typedef enum MuxChannel {
   MUX_CHAN_TC_IN  = 0,
@@ -15,15 +15,15 @@ typedef enum MuxChannel {
 
 typedef void (*mux_rx_cb_t)(MuxChannel_t chan, const uint8_t *payload, size_t len, void *user);
 
-typedef struct UdpSerialMux {
+typedef struct SerialDatagramMux {
   CommunicationInterface *io;
 
   mux_rx_cb_t rx_cb[3];
   void *rx_user[3];
 
-  uint8_t rx_enc_buf[USB_MUX_MAX_DGRAM + 64];
-  uint8_t rx_dec_buf[USB_MUX_MAX_DGRAM + 32];
-  uint8_t tx_enc_buf[USB_MUX_MAX_DGRAM + 64];
+  uint8_t rx_enc_buf[SERIAL_DATAGRAM_MUX_MAX_SIZE + 64];
+  uint8_t rx_dec_buf[SERIAL_DATAGRAM_MUX_MAX_SIZE + 32];
+  uint8_t tx_enc_buf[SERIAL_DATAGRAM_MUX_MAX_SIZE + 64];
 
   size_t rx_enc_len;
   size_t rx_enc_cap;
@@ -35,15 +35,15 @@ typedef struct UdpSerialMux {
   uint32_t frames_crc_fail;
   uint32_t frames_decode_fail;
   uint32_t frames_oversize;
-} UdpSerialMux;
+} SerialDatagramMux;
 
 /**
- * @brief Initialize a new UDP serial mux instance
+ * @brief Initialize a new serial datagram mux instance
  *
  * @param m Uninitialized mux struct
  * @param io Communication interface to underlying transport
  */
-void UdpSerialMux_create(UdpSerialMux *m, CommunicationInterface *io);
+void SerialDatagramMux_create(SerialDatagramMux *m, CommunicationInterface *io);
 
 /**
  * @brief Register callback for received frames on a channel
@@ -53,14 +53,14 @@ void UdpSerialMux_create(UdpSerialMux *m, CommunicationInterface *io);
  * @param cb Callback to call when frame received on channel
  * @param user User data pointer to pass to callback
  */
-void UdpSerialMux_setHandler(UdpSerialMux *m, MuxChannel_t chan, mux_rx_cb_t cb, void *user);
+void SerialDatagramMux_setHandler(SerialDatagramMux *m, MuxChannel_t chan, mux_rx_cb_t cb, void *user);
 
 /**
  * @brief Call periodically (or in a thread) to process incoming bytes and emit frames to callbacks
  *
  * @param m Initialized mux struct
  */
-void UdpSerialMux_pump(UdpSerialMux *m);
+void SerialDatagramMux_pump(SerialDatagramMux *m);
 
 /**
  * @brief Send one datagram on a channel (best-effort)
@@ -72,6 +72,6 @@ void UdpSerialMux_pump(UdpSerialMux *m);
  * @return true if frame was successfully encoded and sent
  * @return false on error
  */
-bool UdpSerialMux_send(UdpSerialMux *m, MuxChannel_t chan, const uint8_t *payload, size_t len);
+bool SerialDatagramMux_send(SerialDatagramMux *m, MuxChannel_t chan, const uint8_t *payload, size_t len);
 
-#endif  // UDP_SERIAL_MUX_H_
+#endif  // SERIAL_DATAGRAM_MUX_H_

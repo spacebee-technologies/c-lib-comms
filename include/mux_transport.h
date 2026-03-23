@@ -7,7 +7,7 @@
 #include <zephyr/kernel.h>
 
 #include "communication_interface.h"
-#include "udp_serial_mux.h"
+#include "serial_datagram_mux.h"
 #include "mutex_interface.h"
 
 #define MUX_TRANSPORT_TC_QUEUE_DEPTH 8
@@ -15,12 +15,12 @@
 // Internal packet stored in the telecommand queue
 typedef struct {
   uint16_t len;
-  uint8_t data[USB_MUX_MAX_DGRAM];
+  uint8_t data[SERIAL_DATAGRAM_MUX_MAX_SIZE];
 } MuxTransportTcPacket;
 
 typedef struct {
   // Shared mux over the single byte stream
-  UdpSerialMux mux;
+  SerialDatagramMux mux;
 
   // Serialize TX from multiple threads
   MutexInterface *tx_lock;
