@@ -46,38 +46,38 @@ typedef struct SerialDatagramMux {
 /**
  * @brief Initialize a new serial datagram mux instance
  *
- * @param m Uninitialized mux struct
+ * @param self Uninitialized mux struct
  * @param io Communication interface to underlying transport
  */
-void SerialDatagramMux_create(SerialDatagramMux *m, CommunicationInterface *io);
+void SerialDatagramMux_create(SerialDatagramMux *self, CommunicationInterface *io);
 
 /**
  * @brief Register callback for received frames on a channel
  *
- * @param m Initialized mux struct
+ * @param self Initialized mux struct
  * @param chan Channel to register callback for
  * @param cb Callback to call when frame received on channel
  * @param user User data pointer to pass to callback
  */
-void SerialDatagramMux_setHandler(SerialDatagramMux *m, MuxChannel_t chan, mux_rx_cb_t cb, void *user);
+void SerialDatagramMux_setHandler(SerialDatagramMux *self, MuxChannel_t chan, mux_rx_cb_t cb, void *user);
 
 /**
  * @brief Call periodically (or in a thread) to process incoming bytes and emit frames to callbacks
  *
  * @param m Initialized mux struct
  */
-void SerialDatagramMux_pump(SerialDatagramMux *m);
+void SerialDatagramMux_pump(SerialDatagramMux *self);
 
 /**
  * @brief Send one datagram on a channel (best-effort)
  *
- * @param m Initialized mux struct
+ * @param self Initialized mux struct
  * @param chan Channel to send on
  * @param payload Data to send
  * @param len Length of data to send
  * @return true if frame was successfully encoded and sent
  * @return false on error
  */
-bool SerialDatagramMux_send(SerialDatagramMux *m, MuxChannel_t chan, const uint8_t *payload, size_t len);
+bool SerialDatagramMux_send(SerialDatagramMux *self, MuxChannel_t chan, const uint8_t *payload, size_t len);
 
 #endif  // SERIAL_DATAGRAM_MUX_H_
